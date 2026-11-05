@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { Header } from "@/components/Header";
 
 const team = [
@@ -105,7 +105,7 @@ export default function ZespolPage() {
           </p>
         </div>
 
-        <Link href="/mapa" className="primary-button">
+        <Link href="/" className="primary-button">
           Nawigacja
         </Link>
       </section>
