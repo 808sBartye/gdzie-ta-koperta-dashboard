@@ -69,7 +69,7 @@ export const gdyniaAdapter: EtlAdapter = {
         address: displayAddress,
         lat,
         lng,
-        slotsCount: 2,
+        slotsCount: null, // ZDiZ Gdynia nie podaje liczby kopert dla OzN w API parkings
         trustScore: 90,
         metadata: {
           city: "Gdynia",

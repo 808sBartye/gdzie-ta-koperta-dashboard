@@ -6,7 +6,7 @@ export interface NormalizedGovSpot {
   address?: string | null;
   lat: number;
   lng: number;
-  slotsCount: number;
+  slotsCount?: number | null;
   trustScore: number;
   metadata?: Record<string, unknown>;
 }
