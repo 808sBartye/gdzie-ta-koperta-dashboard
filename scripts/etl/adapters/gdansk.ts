@@ -71,12 +71,13 @@ export const gdanskAdapter: EtlAdapter = {
         address: addressWithCity,
         lat,
         lng,
-        slotsCount: 2, // Standardowe stanowiska wydzielone dla OzN na parkingach SPP
+        slotsCount: null, // Miasto Gdańsk nie podaje liczby kopert dla OzN w rejestrze CKAN
         trustScore: 90,
         metadata: {
           originalId: lot.id,
           shortName: lot.shortName,
           streetEntrance: lot.streetEntrance,
+          exactSlotsCountKnown: false,
           syncedAt: new Date().toISOString()
         }
       });

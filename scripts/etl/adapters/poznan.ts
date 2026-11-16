@@ -68,7 +68,24 @@ export const poznanAdapter: EtlAdapter = {
       }
 
       const props = feat.properties || {};
-      const disabledCount = parseInt(String(props.m_niepelnosprawni || "1"), 10) || 1;
+
+      // Bezpieczne parsowanie liczby kopert dla OzN
+      let disabledCount: number | null = null;
+      if (props.m_niepelnosprawni !== undefined && props.m_niepelnosprawni !== null) {
+        const rawStr = String(props.m_niepelnosprawni).trim();
+        if (rawStr !== "") {
+          const parsed = parseInt(rawStr, 10);
+          if (Number.isFinite(parsed)) {
+            disabledCount = parsed;
+          }
+        }
+      }
+
+      // Jeśli w rejestrze ZDM Poznań parking ma 0 kopert dla OzN (lub ujemną liczbę) - pomijamy!
+      // Nie importujemy obiektów, które nie posiadają wyznaczonych miejsc dla osób z niepełnosprawnościami.
+      if (disabledCount !== null && disabledCount <= 0) {
+        continue;
+      }
 
       const addressWithCity = props.adres
         ? `${props.adres.trim()}, Poznań`
@@ -89,6 +106,7 @@ export const poznanAdapter: EtlAdapter = {
           totalCapacity: props.pojemnosc,
           payment: props.platnosc,
           hours: props.godziny,
+          exactSlotsCountKnown: disabledCount !== null,
           syncedAt: new Date().toISOString()
         }
       });

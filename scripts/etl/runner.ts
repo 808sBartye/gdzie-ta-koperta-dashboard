@@ -124,7 +124,7 @@ async function conflateSpot(spot: NormalizedGovSpot): Promise<SpatialConflationR
     const updatedMetadata = {
       ...existingMeta,
       address: existingMeta.address || spot.address || null,
-      slotsCount: existingMeta.slotsCount || spot.slotsCount || 1,
+      slotsCount: existingMeta.slotsCount ?? spot.slotsCount ?? null,
       name: existingMeta.name || spot.name || null,
       authority: spot.authority,
       lastConflatedAt: new Date().toISOString()
@@ -164,7 +164,7 @@ async function conflateSpot(spot: NormalizedGovSpot): Promise<SpatialConflationR
 
   const initialMetadata = {
     address: spot.address || null,
-    slotsCount: spot.slotsCount || 1,
+    slotsCount: spot.slotsCount ?? null,
     name: spot.name || null,
     authority: spot.authority,
     ...(spot.metadata || {}),

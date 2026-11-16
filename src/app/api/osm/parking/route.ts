@@ -425,7 +425,7 @@ function gtkSubmissionToFeature(row: GtkSubmissionRow): SnapshotFeature | null {
       parking: null,
       parkingSpace: "disabled",
       capacity: null,
-      capacityDisabled: meta.slotsCount ? String(meta.slotsCount) : "1",
+      capacityDisabled: meta.slotsCount ? String(meta.slotsCount) : null,
       access: null,
       wheelchair: null,
       surface: null,
