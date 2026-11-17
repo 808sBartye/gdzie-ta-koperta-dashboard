@@ -84,7 +84,10 @@ function AdminLoginContent() {
 
         {errorParam === "osm_error" && (
           <div role="alert" className="mb-6 p-3 rounded-xl bg-amber-950/50 border border-amber-800/60 text-amber-200 text-xs">
-            <span className="font-semibold">Błąd autoryzacji OSM:</span> {errorReason || "Nieznany błąd"}
+            <span className="font-semibold">Błąd autoryzacji OSM:</span>{" "}
+            {errorReason === "not_configured"
+              ? "Logowanie OSM nie jest jeszcze skonfigurowane na serwerze (brak zmiennych OSM_OAUTH_*)."
+              : errorReason || "Nieznany błąd"}
           </div>
         )}
 

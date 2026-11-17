@@ -36,6 +36,7 @@ export default function AppPage() {
   const [destinationSpots, setDestinationSpots] = useState<SpotDetail[]>([]);
   const [addModalCoords, setAddModalCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [flyToTrigger, setFlyToTrigger] = useState<{ lat: number; lng: number; zoom?: number; timestamp: number } | null>(null);
+  const [destinationResetKey, setDestinationResetKey] = useState(0);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isStandalone, setIsStandalone] = useState(false);
 
@@ -136,6 +137,14 @@ export default function AppPage() {
     setSelectedSpot(null);
     setNavigatingSpot(null);
     setFlyToTrigger({ lat: dest.lat, lng: dest.lng, zoom: 17, timestamp: Date.now() });
+  };
+
+  const handleClearDestination = () => {
+    setDestination(null);
+    setDestinationSpots([]);
+    setSelectedSpot(null);
+    setNavigatingSpot(null);
+    setDestinationResetKey((prev) => prev + 1);
   };
 
   // Obliczenie top 4 miejsc A, B, C, D dla ustawionego celu
@@ -262,8 +271,10 @@ export default function AppPage() {
           <div className="pointer-events-auto flex flex-col gap-2">
             <DestinationSearch
               onSelectDestination={handleSelectDestination}
+              onClearDestination={handleClearDestination}
               onUseMyLocation={handleUseMyLocation}
               isLocating={isLocating}
+              resetKey={destinationResetKey}
             />
 
             {destination && (
@@ -279,11 +290,7 @@ export default function AppPage() {
                   setSelectedSpot(spot);
                   setNavigatingSpot(spot);
                 }}
-                onClearDestination={() => {
-                  setSelectedSpot(null);
-                  setNavigatingSpot(null);
-                  handleUseMyLocation();
-                }}
+                onClearDestination={handleClearDestination}
               />
             )}
           </div>

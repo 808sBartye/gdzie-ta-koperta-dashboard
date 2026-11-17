@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { appConfig } from "@/lib/appConfig";
-import { OsmLoginStatus } from "@/components/OsmLoginStatus";
 
 const FACEBOOK_URL = "https://www.facebook.com/profile.php?id=61582500564569";
 
@@ -42,8 +41,6 @@ export function Header() {
         >
           Facebook
         </a>
-
-        <OsmLoginStatus />
       </nav>
     </header>
   );

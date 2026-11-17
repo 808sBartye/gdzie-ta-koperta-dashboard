@@ -455,6 +455,13 @@ export default function AdminDashboardPage() {
                 <>
                   <span aria-hidden="true" className="text-amber-400">🔑</span>
                   <span className="font-semibold text-amber-200">Klucz awaryjny</span>
+                  <a
+                    href="/api/admin/auth/osm/login"
+                    className="ml-1 px-2 py-0.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-semibold transition"
+                    title="Połącz konto OpenStreetMap, aby wysyłać edycje do OSM"
+                  >
+                    Połącz OSM
+                  </a>
                 </>
               )}
             </span>
