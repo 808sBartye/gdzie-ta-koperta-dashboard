@@ -4,10 +4,12 @@ import {
   OSM_SESSION_COOKIE,
   decryptSession,
   getBearerSessionFromAuthorization,
+  isOsmOAuthConfigured,
   isSessionValid
 } from "@/lib/osmOAuth";
 
 export async function GET(request: NextRequest) {
+  const configured = isOsmOAuthConfigured();
   const cookieStore = await cookies();
   const rawCookieSession = cookieStore.get(OSM_SESSION_COOKIE)?.value;
   const rawBearerSession = getBearerSessionFromAuthorization(
@@ -17,7 +19,8 @@ export async function GET(request: NextRequest) {
 
   if (!rawSession) {
     return NextResponse.json({
-      authenticated: false
+      authenticated: false,
+      configured
     });
   }
 
@@ -25,12 +28,14 @@ export async function GET(request: NextRequest) {
 
   if (!isSessionValid(session)) {
     return NextResponse.json({
-      authenticated: false
+      authenticated: false,
+      configured
     });
   }
 
   return NextResponse.json({
     authenticated: true,
+    configured,
     user: session?.user,
     scope: session?.scope
   });

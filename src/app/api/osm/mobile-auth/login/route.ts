@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
   authorizeUrl.searchParams.set("response_type", "code");
   authorizeUrl.searchParams.set("client_id", config.clientId);
   authorizeUrl.searchParams.set("redirect_uri", config.redirectUri);
-  authorizeUrl.searchParams.set("scope", "openid read_prefs write_api");
+  authorizeUrl.searchParams.set("scope", "read_prefs write_api");
   authorizeUrl.searchParams.set("state", state);
 
   const response = NextResponse.redirect(authorizeUrl);

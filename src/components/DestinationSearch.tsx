@@ -5,14 +5,18 @@ import { searchDestinations, type GeocodingResult } from "@/lib/photonGeocoding"
 
 interface DestinationSearchProps {
   onSelectDestination: (dest: { lat: number; lng: number; name: string }) => void;
+  onClearDestination?: () => void;
   onUseMyLocation: () => void;
   isLocating?: boolean;
+  resetKey?: number;
 }
 
 export function DestinationSearch({
   onSelectDestination,
+  onClearDestination,
   onUseMyLocation,
-  isLocating
+  isLocating,
+  resetKey = 0,
 }: DestinationSearchProps) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<GeocodingResult[]>([]);
@@ -23,6 +27,15 @@ export function DestinationSearch({
   const inputRef = useRef<HTMLInputElement>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isSelectingRef = useRef(false);
+
+  // Czyszczenie pola wyszukiwania po zewnętrznym anulowaniu celu
+  useEffect(() => {
+    if (resetKey === 0) return;
+    isSelectingRef.current = false;
+    setQuery("");
+    setResults([]);
+    setIsOpen(false);
+  }, [resetKey]);
 
   // Zamykanie listy po kliknięciu poza wyszukiwarkę
   useEffect(() => {
@@ -136,6 +149,7 @@ export function DestinationSearch({
               setQuery("");
               setResults([]);
               setIsOpen(false);
+              onClearDestination?.();
             }}
             className="w-6 h-6 text-slate-400 hover:text-slate-600 flex items-center justify-center text-sm font-bold active:scale-95 transition focus-visible:ring-2 focus-visible:ring-sky-500 rounded"
           >

@@ -7,6 +7,7 @@ import {
 
 export const OSM_SESSION_COOKIE = "gtk_osm_session";
 export const OSM_STATE_COOKIE = "gtk_osm_oauth_state";
+export const OSM_RETURN_TO_COOKIE = "gtk_osm_return_to";
 
 const MOBILE_OAUTH_STATE_PREFIX = "mobile";
 const ALLOWED_MOBILE_RETURN_PROTOCOLS = new Set([
@@ -55,11 +56,35 @@ function trimTrailingSlash(value: string) {
   return value.replace(/\/+$/, "");
 }
 
-export function getOsmConfig(): OsmConfig {
+export function isOsmOAuthConfigured(): boolean {
+  return Boolean(
+    process.env.OSM_OAUTH_CLIENT_ID &&
+      process.env.OSM_OAUTH_CLIENT_SECRET &&
+      process.env.OSM_SESSION_SECRET
+  );
+}
+
+export function sanitizeReturnTo(
+  value: string | null | undefined,
+  fallback = "/app"
+): string {
+  if (!value || !value.startsWith("/") || value.startsWith("//")) {
+    return fallback;
+  }
+  return value;
+}
+
+export function getOsmConfig(requestOrigin?: string): OsmConfig {
+  const redirectUri =
+    process.env.OSM_OAUTH_REDIRECT_URI ||
+    (requestOrigin
+      ? `${trimTrailingSlash(requestOrigin)}/api/osm/auth/callback`
+      : requiredEnv("OSM_OAUTH_REDIRECT_URI"));
+
   return {
     clientId: requiredEnv("OSM_OAUTH_CLIENT_ID"),
     clientSecret: requiredEnv("OSM_OAUTH_CLIENT_SECRET"),
-    redirectUri: requiredEnv("OSM_OAUTH_REDIRECT_URI"),
+    redirectUri,
     baseUrl: trimTrailingSlash(
       process.env.OSM_BASE_URL || "https://www.openstreetmap.org"
     ),

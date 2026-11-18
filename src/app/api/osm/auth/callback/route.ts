@@ -1,12 +1,15 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import {
+  OSM_RETURN_TO_COOKIE,
   OSM_SESSION_COOKIE,
   OSM_STATE_COOKIE,
   encryptSession,
   getCookieOptions,
   getOsmConfig,
+  isOsmOAuthConfigured,
   parseMobileOauthState,
+  sanitizeReturnTo,
   type OsmSession
 } from "@/lib/osmOAuth";
 import {
@@ -40,6 +43,24 @@ function redirectTo(request: NextRequest, path: string) {
   return NextResponse.redirect(new URL(path, request.url));
 }
 
+function redirectWithParams(
+  request: NextRequest,
+  path: string,
+  params: Record<string, string>
+) {
+  const url = new URL(path, request.url);
+  for (const [k, v] of Object.entries(params)) {
+    url.searchParams.set(k, v);
+  }
+  return NextResponse.redirect(url);
+}
+
+function clearOauthFlowCookies(response: NextResponse) {
+  response.cookies.delete(OSM_STATE_COOKIE);
+  response.cookies.delete(OSM_RETURN_TO_COOKIE);
+  response.cookies.delete("gtk_admin_oauth_intent");
+}
+
 function redirectMobileAuthError(returnTo: string, error: string) {
   const url = new URL(returnTo);
   url.searchParams.set("osm", "error");
@@ -49,15 +70,26 @@ function redirectMobileAuthError(returnTo: string, error: string) {
 }
 
 export async function GET(request: NextRequest) {
-  const config = getOsmConfig();
-  const { searchParams } = new URL(request.url);
+  const { searchParams, origin } = new URL(request.url);
+  const cookieStore = await cookies();
+  const returnTo = sanitizeReturnTo(
+    cookieStore.get(OSM_RETURN_TO_COOKIE)?.value,
+    "/app"
+  );
+
+  if (!isOsmOAuthConfigured()) {
+    const res = redirectWithParams(request, returnTo, { osm: "not_configured" });
+    clearOauthFlowCookies(res);
+    return res;
+  }
+
+  const config = getOsmConfig(origin);
 
   const code = searchParams.get("code");
   const state = searchParams.get("state");
   const error = searchParams.get("error");
   const mobileState = state ? parseMobileOauthState(state) : null;
 
-  const cookieStore = await cookies();
   const isAdminIntent =
     (state && state.startsWith("admin.")) ||
     cookieStore.get("gtk_admin_oauth_intent")?.value === "1";
@@ -68,8 +100,7 @@ export async function GET(request: NextRequest) {
         request,
         `/admin/login?error=osm_error&reason=${encodeURIComponent(error)}`
       );
-      res.cookies.delete(OSM_STATE_COOKIE);
-      res.cookies.delete("gtk_admin_oauth_intent");
+      clearOauthFlowCookies(res);
       return res;
     }
 
@@ -77,14 +108,23 @@ export async function GET(request: NextRequest) {
       return redirectMobileAuthError(mobileState.returnTo, error);
     }
 
-    return redirectTo(request, `/mapa?osm=error&reason=${encodeURIComponent(error)}`);
+    const res = redirectWithParams(request, returnTo, {
+      osm: "error",
+      reason: error
+    });
+    clearOauthFlowCookies(res);
+    return res;
   }
 
   if (!code || !state) {
     if (isAdminIntent) {
-      return redirectTo(request, "/admin/login?error=missing_code");
+      const res = redirectTo(request, "/admin/login?error=missing_code");
+      clearOauthFlowCookies(res);
+      return res;
     }
-    return redirectTo(request, "/mapa?osm=missing_code");
+    const res = redirectWithParams(request, returnTo, { osm: "missing_code" });
+    clearOauthFlowCookies(res);
+    return res;
   }
 
   const expectedState = cookieStore.get(OSM_STATE_COOKIE)?.value;
@@ -92,8 +132,7 @@ export async function GET(request: NextRequest) {
   if (!expectedState || expectedState !== state) {
     if (isAdminIntent) {
       const res = redirectTo(request, "/admin/login?error=invalid_state");
-      res.cookies.delete(OSM_STATE_COOKIE);
-      res.cookies.delete("gtk_admin_oauth_intent");
+      clearOauthFlowCookies(res);
       return res;
     }
 
@@ -101,7 +140,9 @@ export async function GET(request: NextRequest) {
       return redirectMobileAuthError(mobileState.returnTo, "invalid_state");
     }
 
-    return redirectTo(request, "/mapa?osm=invalid_state");
+    const res = redirectWithParams(request, returnTo, { osm: "invalid_state" });
+    clearOauthFlowCookies(res);
+    return res;
   }
 
   const tokenResponse = await fetch(`${config.baseUrl}/oauth2/token`, {
@@ -131,10 +172,12 @@ export async function GET(request: NextRequest) {
       return redirectMobileAuthError(mobileState.returnTo, reason);
     }
 
-    return redirectTo(
-      request,
-      `/mapa?osm=token_error&reason=${encodeURIComponent(reason)}`
-    );
+    const res = redirectWithParams(request, returnTo, {
+      osm: "token_error",
+      reason
+    });
+    clearOauthFlowCookies(res);
+    return res;
   }
 
   const userResponse = await fetch(`${config.apiBaseUrl}/user/details.json`, {
@@ -149,7 +192,11 @@ export async function GET(request: NextRequest) {
       return redirectMobileAuthError(mobileState.returnTo, "user_details_error");
     }
 
-    return redirectTo(request, "/mapa?osm=user_details_error");
+    const res = redirectWithParams(request, returnTo, {
+      osm: "user_details_error"
+    });
+    clearOauthFlowCookies(res);
+    return res;
   }
 
   const userData = (await userResponse.json()) as OsmUserDetailsResponse;
@@ -241,7 +288,7 @@ export async function GET(request: NextRequest) {
     return response;
   }
 
-  const response = redirectTo(request, "/mapa?osm=connected");
+  const response = redirectWithParams(request, returnTo, { osm: "connected" });
 
   response.cookies.set(
     OSM_SESSION_COOKIE,
@@ -249,8 +296,7 @@ export async function GET(request: NextRequest) {
     getCookieOptions(Math.min(expiresIn, 60 * 60 * 24 * 30))
   );
 
-  response.cookies.delete(OSM_STATE_COOKIE);
-  response.cookies.delete("gtk_admin_oauth_intent");
+  clearOauthFlowCookies(response);
 
   return response;
 }
