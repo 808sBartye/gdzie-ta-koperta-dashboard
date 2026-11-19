@@ -762,7 +762,19 @@ export default function AdminDashboardPage() {
                       </p>
 
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        {item.source_type === "issue_report" || item.metadata?.type === "issue_report" ? (
+                        {item.status === "confirmed_removed" ? (
+                          <span className="px-2 py-0.5 rounded text-[10px] bg-slate-800 text-slate-300 border border-slate-600 font-bold">
+                            🚫 Zlikwidowane (ukryte)
+                          </span>
+                        ) : item.status === "removed" ? (
+                          <span className="px-2 py-0.5 rounded text-[10px] bg-slate-800 text-slate-300 border border-slate-600 font-bold">
+                            🚫 Usunięte z mapy
+                          </span>
+                        ) : item.status === "rejected" ? (
+                          <span className="px-2 py-0.5 rounded text-[10px] bg-rose-500/20 text-rose-300 border border-rose-500/40 font-bold">
+                            Odrzucone
+                          </span>
+                        ) : item.source_type === "issue_report" || item.metadata?.type === "issue_report" ? (
                           <span className="px-2 py-0.5 rounded text-[10px] bg-rose-500/25 text-rose-300 border border-rose-500/50 font-bold flex items-center gap-1">
                             <span aria-hidden="true">⚠️</span>
                             <span>{item.metadata?.issueCategoryLabel || "Zgłoszony problem"}</span>
@@ -780,8 +792,8 @@ export default function AdminDashboardPage() {
                             W OSM
                           </span>
                         ) : (
-                          <span className="px-2 py-0.5 rounded text-[10px] bg-rose-500/20 text-rose-300 border border-rose-500/40 font-bold">
-                            Odrzucone
+                          <span className="px-2 py-0.5 rounded text-[10px] bg-slate-800 text-slate-300 border border-slate-600 font-bold">
+                            {item.status}
                           </span>
                         )}
 
@@ -1129,42 +1141,78 @@ export default function AdminDashboardPage() {
 
                 {/* Przyciski operacyjne */}
                 {selectedItem.source_type === "issue_report" || selectedItem.metadata?.type === "issue_report" ? (
-                  /* Tryb zgłoszenia problemu / likwidacji miejsca */
-                  <div className="grid grid-cols-1 sm:flex sm:items-center sm:justify-end gap-2.5">
-                    {/* 1. Potwierdź likwidację miejsca (ukryj z mapy) */}
-                    <button
-                      type="button"
-                      disabled={isProcessing}
-                      onClick={handleConfirmIssueRemoval}
-                      aria-label="Potwierdź likwidację miejsca i ukryj je z mapy publicznej"
-                      className="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 active:scale-95 text-white font-bold text-xs shadow-md shadow-rose-600/30 transition disabled:opacity-50 flex items-center justify-center gap-1.5 min-h-[44px] focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:outline-none"
-                    >
-                      <span aria-hidden="true">🚫</span>
-                      <span>Potwierdź likwidację (Ukryj z mapy)</span>
-                    </button>
+                  selectedItem.status === "confirmed_removed" || selectedItem.status === "rejected" ? (
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                      <div className="px-3.5 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-xs text-slate-300 font-medium">
+                        {selectedItem.status === "confirmed_removed"
+                          ? "🚫 Likwidacja została już potwierdzona — miejsce jest ukryte na mapie."
+                          : "✔ Uwaga została odrzucona — miejsce pozostaje widoczne na mapie."}
+                      </div>
+                      <button
+                        type="button"
+                        disabled={isProcessing}
+                        onClick={handleHardDeleteSpam}
+                        aria-label="Usuń to zgłoszenie z bazy"
+                        className="px-3.5 py-2.5 rounded-xl bg-rose-950 hover:bg-rose-900 active:scale-95 text-rose-200 hover:text-white font-bold text-xs border border-rose-800 transition disabled:opacity-50 flex items-center justify-center gap-1.5 min-h-[44px] focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:outline-none"
+                      >
+                        <span aria-hidden="true">🗑️</span>
+                        <span>Usuń wpis</span>
+                      </button>
+                    </div>
+                  ) : (
+                    /* Tryb zgłoszenia problemu / likwidacji miejsca */
+                    <div className="grid grid-cols-1 sm:flex sm:items-center sm:justify-end gap-2.5">
+                      {/* 1. Potwierdź likwidację miejsca (ukryj z mapy) */}
+                      <button
+                        type="button"
+                        disabled={isProcessing}
+                        onClick={handleConfirmIssueRemoval}
+                        aria-label="Potwierdź likwidację miejsca i ukryj je z mapy publicznej"
+                        className="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 active:scale-95 text-white font-bold text-xs shadow-md shadow-rose-600/30 transition disabled:opacity-50 flex items-center justify-center gap-1.5 min-h-[44px] focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:outline-none"
+                      >
+                        <span aria-hidden="true">🚫</span>
+                        <span>Potwierdź likwidację (Ukryj z mapy)</span>
+                      </button>
 
-                    {/* 2. Odrzuć uwagę (miejsce istnieje w rzeczywistości) */}
-                    <button
-                      type="button"
-                      disabled={isProcessing}
-                      onClick={handleDismissIssue}
-                      aria-label="Odrzuć uwagę zgłaszającego, potwierdzając że miejsce istnieje w rzeczywistości"
-                      className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold text-xs shadow-md shadow-emerald-600/30 transition disabled:opacity-50 flex items-center justify-center gap-1.5 min-h-[44px] focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none"
-                    >
-                      <span aria-hidden="true">✔</span>
-                      <span>Odrzuć uwagę (Miejsce istnieje)</span>
-                    </button>
+                      {/* 2. Odrzuć uwagę (miejsce istnieje w rzeczywistości) */}
+                      <button
+                        type="button"
+                        disabled={isProcessing}
+                        onClick={handleDismissIssue}
+                        aria-label="Odrzuć uwagę zgłaszającego, potwierdzając że miejsce istnieje w rzeczywistości"
+                        className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold text-xs shadow-md shadow-emerald-600/30 transition disabled:opacity-50 flex items-center justify-center gap-1.5 min-h-[44px] focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none"
+                      >
+                        <span aria-hidden="true">✔</span>
+                        <span>Odrzuć uwagę (Miejsce istnieje)</span>
+                      </button>
 
-                    {/* 3. Spam */}
+                      {/* 3. Spam */}
+                      <button
+                        type="button"
+                        disabled={isProcessing}
+                        onClick={handleHardDeleteSpam}
+                        aria-label="Usuń to zgłoszenie jako spam"
+                        className="px-3.5 py-2.5 rounded-xl bg-rose-950 hover:bg-rose-900 active:scale-95 text-rose-200 hover:text-white font-bold text-xs border border-rose-800 transition disabled:opacity-50 flex items-center justify-center gap-1.5 min-h-[44px] focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:outline-none"
+                      >
+                        <span aria-hidden="true">🗑️</span>
+                        <span>Spam</span>
+                      </button>
+                    </div>
+                  )
+                ) : selectedItem.status === "removed" ? (
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div className="px-3.5 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-xs text-slate-300 font-medium">
+                      🚫 To miejsce zostało usunięte i jest ukryte na mapie publicznej.
+                    </div>
                     <button
                       type="button"
                       disabled={isProcessing}
                       onClick={handleHardDeleteSpam}
-                      aria-label="Usuń to zgłoszenie jako spam"
+                      aria-label="Usuń ten wpis z bazy"
                       className="px-3.5 py-2.5 rounded-xl bg-rose-950 hover:bg-rose-900 active:scale-95 text-rose-200 hover:text-white font-bold text-xs border border-rose-800 transition disabled:opacity-50 flex items-center justify-center gap-1.5 min-h-[44px] focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:outline-none"
                     >
                       <span aria-hidden="true">🗑️</span>
-                      <span>Spam</span>
+                      <span>Usuń wpis</span>
                     </button>
                   </div>
                 ) : (
