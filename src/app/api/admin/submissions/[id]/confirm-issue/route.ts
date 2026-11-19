@@ -50,10 +50,11 @@ export async function POST(
 
     // 2. Jeśli zgłoszenie dotyczyło istniejącej koperty w gtk_osm_submissions, oznacz ją jako 'removed'
     if (targetSpotId) {
+      const normalizedTargetSpotId = String(targetSpotId);
       await sql`
         UPDATE gtk_osm_submissions
         SET status = 'removed'
-        WHERE (id = ${targetSpotId} OR osm_id::text = ${targetSpotId} OR local_spot_id = ${targetSpotId})
+        WHERE (id::text = ${normalizedTargetSpotId} OR osm_id::text = ${normalizedTargetSpotId} OR local_spot_id = ${normalizedTargetSpotId})
           AND id != ${id};
       `;
     }
